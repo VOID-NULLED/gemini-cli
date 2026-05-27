@@ -222,6 +222,18 @@ export class PromptProvider {
         options: snippets.SystemPromptOptions,
       ) => string;
       basePrompt = getCoreSystemPrompt(options);
+
+      // Append the body of all enabled built-in skills natively to the system prompt
+      const builtinSkills = skills.filter(
+        (s) => s.isBuiltin && s.name !== 'skill-creator',
+      );
+      if (builtinSkills.length > 0) {
+        let builtinSkillsPrompt = '\n\n# Natively Enabled Guidelines\n';
+        for (const s of builtinSkills) {
+          builtinSkillsPrompt += `\n## Skill: ${s.name}\n${s.body}\n`;
+        }
+        basePrompt += builtinSkillsPrompt;
+      }
     }
 
     // --- Finalization (Shell) ---
