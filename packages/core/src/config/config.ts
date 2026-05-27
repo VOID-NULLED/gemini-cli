@@ -1456,6 +1456,14 @@ export class Config implements McpContext, AgentLoopContext {
         );
         this.getSkillManager().setDisabledSkills(this.disabledSkills);
 
+        // Automatically programmatically activate all discovered built-in skills (except skill-creator) at startup!
+        const builtinSkills = this.getSkillManager()
+          .getSkills()
+          .filter((s) => s.isBuiltin && s.name !== 'skill-creator');
+        for (const s of builtinSkills) {
+          this.getSkillManager().activateSkill(s.name);
+        }
+
         // Re-register ActivateSkillTool to update its schema with the discovered enabled skill enums
         if (this.getSkillManager().getSkills().length > 0) {
           this.toolRegistry.unregisterTool(ActivateSkillTool.Name);
