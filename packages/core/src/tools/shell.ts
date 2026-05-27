@@ -465,6 +465,27 @@ export class ShellToolInvocation extends BaseToolInvocation<
           llmContent += ' There was no output before it was cancelled.';
         }
       } else if (this.params.is_background || result.backgrounded) {
+        // Check if background process crashed immediately (e.g. failed imports or setup error)
+        let isAlive = true;
+        if (result.pid) {
+          try {
+            process.kill(result.pid, 0);
+          } catch {
+            isAlive = false;
+          }
+        }
+        if (!isAlive) {
+          llmContent = `[ERROR: Background process crashed immediately on startup!]\nOutput:\n${result.output || '(empty)'}`;
+          return {
+            llmContent,
+            returnDisplay: llmContent,
+            error: {
+              message: `Background process exited prematurely: ${result.output}`,
+              type: ToolErrorType.SHELL_EXECUTE_ERROR,
+            },
+          };
+        }
+
         llmContent = `Command moved to background (PID: ${result.pid}). Output hidden. Press Ctrl+B to view.`;
         data = {
           pid: result.pid,
@@ -474,7 +495,13 @@ export class ShellToolInvocation extends BaseToolInvocation<
       } else {
         // Create a formatted error string for display, replacing the wrapper command
         // with the user-facing command.
-        const llmContentParts = [`Output: ${result.output || '(empty)'}`];
+        let exitErrorBanner = '';
+        if (result.exitCode !== null && result.exitCode !== 0) {
+          exitErrorBanner = `[ERROR: Command exited with code ${result.exitCode}]\n`;
+        }
+        const llmContentParts = [
+          `${exitErrorBanner}Output: ${result.output || '(empty)'}`,
+        ];
 
         if (result.error) {
           const finalError = result.error.message.replaceAll(
@@ -486,6 +513,11 @@ export class ShellToolInvocation extends BaseToolInvocation<
 
         if (result.exitCode !== null && result.exitCode !== 0) {
           llmContentParts.push(`Exit Code: ${result.exitCode}`);
+          if (result.exitCode === 137) {
+            llmContentParts.push(
+              `WARNING: Exit Code 137 / SIGKILL detected. This indicates the Linux Out of Memory (OOM) Killer terminated your command because it exceeded container RAM limitations. Running parallel compilation (like make -j$(nproc)) on massive template systems (like Caffe) triggers OOM. You MUST compile with fewer parallel jobs (e.g. 'make -j2') or sequentially.`,
+            );
+          }
           data = {
             exitCode: result.exitCode,
             isError: true,

@@ -988,7 +988,8 @@ ${snippet}`);
         '\n\n--- MANDATORY POST-EDIT REMINDER ---\n' +
         '1. TASK TRACKER: If the Task Management Protocol is enabled, you MUST immediately call tracker_create_task or tracker_update_task to register or update tasks for this change.\n' +
         '2. VERIFICATION & TESTING: You MUST compile and run the code, and execute automated tests or verification/reproduction scripts. A change is NOT complete without verification logic.\n' +
-        '3. EXPLAIN BEFORE ACTING: You MUST provide a concise, one-sentence explanation of your intent or strategy immediately before your next tool calls.\n' +
+        '3. GENERALIZATION: Ensure your solver or extraction script is dynamically adaptive and does not hardcode parameters, dimensions, or thresholds tuned only to the local workspace example.\n' +
+        '4. EXPLAIN BEFORE ACTING: You MUST provide a concise, one-sentence explanation of your intent or strategy immediately before your next tool calls.\n' +
         '------------------------------------';
       llmContent += trackerReminder;
 
